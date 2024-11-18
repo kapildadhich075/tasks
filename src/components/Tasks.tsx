@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 import { Task } from "../constants/interface_task";
 import {
@@ -9,94 +9,135 @@ import {
   TaskItem,
 } from "../style/TaskStyle";
 
+type FilterType = "all" | "active" | "completed";
+
 const TaskManagementApp: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTask, setNewTask] = useState<string>("");
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-
-  // Load tasks from localStorage on initial render
-  useEffect(() => {
+  const [tasks, setTasks] = useState<Task[]>(() => {
     const savedTasks = localStorage.getItem("tasks");
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    }
-  }, []);
+    return savedTasks ? JSON.parse(savedTasks) : [];
+  });
+  const [newTask, setNewTask] = useState("");
+  const [filter, setFilter] = useState<FilterType>("all");
 
-  // Save tasks to localStorage whenever tasks change
+  // Save tasks to localStorage
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
 
-  const addTask = (): void => {
-    if (newTask.trim() === "") return;
-
-    if (editingTask) {
-      // Update existing task
-      setTasks(
-        tasks.map((task) =>
-          task.id === editingTask.id ? { ...task, text: newTask } : task
-        )
-      );
-      setEditingTask(null);
-    } else {
-      // Add new task
-      const newTaskObject: Task = {
-        id: Date.now(),
-        text: newTask,
-        completed: false,
-      };
-      setTasks([...tasks, newTaskObject]);
+  // Filtered tasks with memoization
+  const filteredTasks = useMemo(() => {
+    switch (filter) {
+      case "active":
+        return tasks.filter((task) => !task.completed);
+      case "completed":
+        return tasks.filter((task) => task.completed);
+      default:
+        return tasks;
     }
+  }, [tasks, filter]);
+
+  const addTask = () => {
+    if (!newTask.trim()) return;
+
+    const newTaskObject: Task = {
+      id: Date.now(),
+      text: newTask.trim(),
+      completed: false,
+      createdAt: Date.now(),
+    };
+
+    setTasks((prevTasks) => [...prevTasks, newTaskObject]);
     setNewTask("");
   };
 
-  const deleteTask = (id: number): void => {
-    setTasks(tasks.filter((task) => task.id !== id));
-  };
-
-  const toggleComplete = (id: number): void => {
-    setTasks(
-      tasks.map((task) =>
+  const toggleTaskCompletion = (id: number) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
         task.id === id ? { ...task, completed: !task.completed } : task
       )
     );
   };
 
-  const startEditing = (task: Task): void => {
-    setEditingTask(task);
-    setNewTask(task.text);
+  const deleteTask = (id: number) => {
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+  };
+
+  const clearCompleted = () => {
+    setTasks((prevTasks) => prevTasks.filter((task) => !task.completed));
   };
 
   return (
     <AppContainer>
-      <h1>Task Management App</h1>
-      <TaskInput
-        type="text"
-        value={newTask}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setNewTask(e.target.value)
-        }
-        placeholder="Enter a new task"
-        onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
-          e.key === "Enter" && addTask()
-        }
-      />
-      <Button onClick={addTask}>
-        {editingTask ? "Update Task" : "Add Task"}
-      </Button>
+      <h1
+        style={{
+          color: "white",
+          textAlign: "center",
+        }}
+      >
+        Task Manager
+      </h1>
 
+      {/* Task Input */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          gap: "10px",
+        }}
+      >
+        <TaskInput
+          type="text"
+          value={newTask}
+          onChange={(e) => setNewTask(e.target.value)}
+          placeholder="Add a new task"
+          onKeyPress={(e) => e.key === "Enter" && addTask()}
+        />
+        <Button
+          onClick={addTask}
+          style={{
+            marginBottom: "10px",
+          }}
+        >
+          Add Task
+        </Button>
+      </div>
+
+      {/* Filter Buttons */}
+      <div>
+        <Button $active={filter === "all"} onClick={() => setFilter("all")}>
+          All
+        </Button>
+        <Button
+          $active={filter === "active"}
+          onClick={() => setFilter("active")}
+        >
+          Active
+        </Button>
+        <Button
+          $active={filter === "completed"}
+          onClick={() => setFilter("completed")}
+        >
+          Completed
+        </Button>
+        <Button onClick={clearCompleted}>Clear Completed</Button>
+      </div>
+
+      {/* Task List */}
       <TaskList>
-        {tasks.map((task) => (
+        {filteredTasks.map((task) => (
           <TaskItem key={task.id} $completed={task.completed}>
-            <span onClick={() => toggleComplete(task.id)}>{task.text}</span>
-            <div>
-              <Button className="edit" onClick={() => startEditing(task)}>
-                Edit
-              </Button>
-              <Button className="delete" onClick={() => deleteTask(task.id)}>
-                Delete
-              </Button>
-            </div>
+            <span
+              onClick={() => toggleTaskCompletion(task.id)}
+              style={{ flex: 1, cursor: "pointer" }}
+            >
+              {task.text}
+            </span>
+            <Button
+              onClick={() => deleteTask(task.id)}
+              style={{ backgroundColor: "#f44336", color: "white" }}
+            >
+              Delete
+            </Button>
           </TaskItem>
         ))}
       </TaskList>

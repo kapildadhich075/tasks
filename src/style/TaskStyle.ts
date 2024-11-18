@@ -1,10 +1,12 @@
 import styled from "styled-components";
 
 export const AppContainer = styled.div`
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 20px;
   font-family: Arial, sans-serif;
+  background-color: #2a3663;
+  border-radius: 4px;
 `;
 
 export const TaskInput = styled.input`
@@ -15,25 +17,18 @@ export const TaskInput = styled.input`
   border-radius: 4px;
 `;
 
-export const Button = styled.button`
-  background-color: #4caf50;
-  color: white;
+export const Button = styled.button<{ $active?: boolean }>`
+  background-color: ${(props) => (props.$active ? "#4CAF50" : "#AE445A")};
+  color: ${(props) => (props.$active ? "white" : "#FAF6E3")};
   border: none;
-  padding: 10px 15px;
-  margin-right: 10px;
+  padding: 8px 12px;
+  margin-right: 5px;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.3s ease;
 
   &:hover {
-    background-color: #45a049;
-  }
-
-  &.delete {
-    background-color: #f44336;
-  }
-
-  &.edit {
-    background-color: #2196f3;
+    opacity: 0.8;
   }
 `;
 
@@ -49,6 +44,8 @@ export const TaskItem = styled.li<{ $completed?: boolean }>`
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #eee;
-  background-color: ${(props) => (props.$completed ? "#e0e0e0" : "white")};
+  border-radius: 4px;
+  margin-bottom: 5px;
+  background-color: ${(props) => (props.$completed ? "#f0f0f0" : "white")};
   text-decoration: ${(props) => (props.$completed ? "line-through" : "none")};
 `;
